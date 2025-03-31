@@ -42,7 +42,7 @@ td {
   display: flex;
   width: 30%;
   justify-content: space-around;
-  margin: 3vh auto;
+  margin: 2vh auto;
 }
 
 .unused-cell {
@@ -86,4 +86,19 @@ select {
   padding-left: 2%;
   padding-right: 2%;
   font-size: 20px;
+}
+
+#resetButton {
+  border-radius: 100px;
+  width: 50px;
+  height: 50px;
+  background-color: rgb(255, 255, 255);
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  border: 1px solid #969696;
+}
+
+#resetButton:hover {
+  background-color: #929292;
 }
