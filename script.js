@@ -502,13 +502,7 @@ function createEmptyTable(){
         const tr = document.createElement('tr');
         for(let j = 1; j <= 5; j++){
             const td = document.createElement('td');
-            if((i % 2) === 0 && (j % 2) === 0){
-                td.classList.add('unused-cell');
-            }
-            else{
-                td.textContent = '';
-            }
-
+            td.textContent = '';
             tr.appendChild(td);
         }
         board.appendChild(tr);
