@@ -18,7 +18,12 @@ table {
 }
 
 .empty {
-  background-color: #f0f0f0;
+  background-color: #ffffff;
+  cursor: pointer;
+}
+
+.digit-cell {
+  background-color: #dfdfdf;
   cursor: pointer;
 }
 
@@ -41,7 +46,7 @@ td {
 }
 
 .unused-cell {
-  background-color: rgb(215, 240, 248);
+  background-color: #dfdfdf;
 }
 
 button {

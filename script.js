@@ -1,30 +1,25 @@
+window.onload = createEmptyTable
+const board = document.getElementById("puzzle");
 document.getElementById("create").addEventListener("click", buildTable);
 
 function generateMathEquation(numCount, opWeights) {
-    // Функция для генерации последовательности операций с учетом правил повторения.
-    // Если количество операций меньше, чем число уникальных операторов, то ищем только неиспользованные,
-    // иначе допускаем те, что встречались меньше двух раз.
     function generateOpSequence(numOps, opWeights) {
       const availableOps = Object.keys(opWeights);
       const opArr = [];
       for (let i = 0; i < numOps; i++) {
         let candidateOps;
         if (i < availableOps.length) {
-          // Пока можем избежать повторов – выбираем операторы, которых еще не было.
           candidateOps = availableOps.filter(op => !opArr.includes(op));
         } else {
-          // Иначе допускаем операторы, в которых повторений меньше двух.
           candidateOps = availableOps.filter(op =>
             opArr.filter(x => x === op).length < 2
           );
         }
-        // Если по каким-то причинам список пуст (хотя в норме он не должен быть пустым), возвращаем все с count < 2.
         if (candidateOps.length === 0) {
           candidateOps = availableOps.filter(op =>
             opArr.filter(x => x === op).length < 2
           );
         }
-        // Выбираем операцию случайно с учетом весов в candidateOps.
         let totalWeight = candidateOps.reduce((sum, op) => sum + opWeights[op], 0);
         let rand = Math.random() * totalWeight;
         let chosen;
@@ -41,7 +36,6 @@ function generateMathEquation(numCount, opWeights) {
       return opArr;
     }
   
-    // Функция, которая преобразует цепочку операций (например, [ '*', '/' ]) и массив чисел в строковое представление.
     function segmentToString(segmentNumbers, chainOps) {
       let str = segmentNumbers[0].toString();
       for (let i = 0; i < chainOps.length; i++) {
@@ -50,55 +44,41 @@ function generateMathEquation(numCount, opWeights) {
       return str;
     }
   
-    // Цикл повторной генерации до тех пор, пока итоговый результат не попадет в диапазон [0, 100]
     while (true) {
-      // Шаг 1. Генерируем последовательность операций.
-      // Всего операций должно быть (numCount - 1)
       const opArr = generateOpSequence(numCount - 1, opWeights);
   
-      // Шаг 2. Разбиваем последовательность на сегменты.
-      // Операторы '+' и '-' разделяют выражение на «умножительно-делительные» цепочки.
-      const segmentsOps = []; // цепочки операций для умножения/деления
-      const addOps = [];      // операторы сложения/вычитания между сегментами
+      const segmentsOps = [];
+      const addOps = []; 
       let currentSegmentOps = [];
       for (const op of opArr) {
         if (op === '+' || op === '-') {
           segmentsOps.push(currentSegmentOps);
           addOps.push(op);
-          currentSegmentOps = []; // начинаем новую цепочку
+          currentSegmentOps = [];
         } else {
-          // Операции '*' и '/'
           currentSegmentOps.push(op);
         }
       }
-      // Добавляем последний сегмент
       segmentsOps.push(currentSegmentOps);
   
-      // Шаг 3. Для каждой цепочки генерируем числа так, чтобы промежуточные операции были корректны.
-      // Для простоты выбираем числа из диапазона 1..20.
       const segments = [];
       const maxRange = 20;
       for (const chain of segmentsOps) {
         const numbers = [];
-        // Начальное число в цепочке: от 1 до maxRange
         let currentValue = Math.floor(Math.random() * maxRange) + 5;
         numbers.push(currentValue);
-        // Пробегаем по каждой операции в цепочке.
         for (const op of chain) {
           if (op === '*') {
-            // При умножении выбираем множитель.
             const factor = Math.floor(Math.random() * maxRange) + 1;
             numbers.push(factor);
             currentValue = currentValue * factor;
           } else if (op === '/') {
-            // При делении выбираем делитель так, чтобы текущее значение делилось без остатка.
             const divisors = [];
             for (let d = 1; d <= maxRange; d++) {
               if (currentValue % d === 0) {
                 divisors.push(d);
               }
             }
-            // На всякий случай, если делителей не найдено (теоретически 1 всегда делитель)
             if (divisors.length === 0) {
               divisors.push(1);
             }
@@ -110,12 +90,9 @@ function generateMathEquation(numCount, opWeights) {
         segments.push({ numbers, value: currentValue });
       }
   
-      // Шаг 4. Собираем итоговое выражение.
-      // Первое значение – значение первого сегмента.
       let expressionStr = segmentToString(segments[0].numbers, segmentsOps[0]);
       let result = segments[0].value;
   
-      // Применяем операции сложения/вычитания между цепочками.
       for (let i = 0; i < addOps.length; i++) {
         const op = addOps[i];
         const segIndex = i + 1;
@@ -127,15 +104,13 @@ function generateMathEquation(numCount, opWeights) {
         }
       }
   
-      // Добавляем результат к строковому представлению
       expressionStr += " = " + result.toString();
   
-      // Шаг 5. Проверяем условие итогового результата.
       if (result >= 0 && result <= 100) {
         return expressionStr;
       }
     }
-  }
+}
 
 const findVerticalExpression = (datasets, numbers) => {
     return numbers.map(num => {
@@ -456,6 +431,8 @@ function buildTable() {
                 td.classList.add('unused-cell');
             } else {
                 td.textContent = cell;
+                console.log(cell);
+                    td.classList.add('digit-cell');
             }
             
             tr.appendChild(td);
@@ -514,5 +491,26 @@ function checkPuzzle() {
                 }
             }
         }
+    }
+}
+
+function createEmptyTable(){
+    if (board.children.length !== 0)
+        board.removeChild(board.children[0])
+
+    for(let i = 1; i <= 5; i++){
+        const tr = document.createElement('tr');
+        for(let j = 1; j <= 5; j++){
+            const td = document.createElement('td');
+            if((i % 2) === 0 && (j % 2) === 0){
+                td.classList.add('unused-cell');
+            }
+            else{
+                td.textContent = '';
+            }
+
+            tr.appendChild(td);
+        }
+        board.appendChild(tr);
     }
 }
