@@ -1,71 +1,141 @@
 document.getElementById("create").addEventListener("click", buildTable);
 
 function generateMathEquation(numCount, opWeights) {
-    const operations = ['+', '-', '*', '/'];
-    const weightedOperations = [];
-
-    for (const op in opWeights) {
-        for (let i = 0; i < Math.floor(opWeights[op] * 100); i++) {
-            weightedOperations.push(op);
+    // Функция для генерации последовательности операций с учетом правил повторения.
+    // Если количество операций меньше, чем число уникальных операторов, то ищем только неиспользованные,
+    // иначе допускаем те, что встречались меньше двух раз.
+    function generateOpSequence(numOps, opWeights) {
+      const availableOps = Object.keys(opWeights);
+      const opArr = [];
+      for (let i = 0; i < numOps; i++) {
+        let candidateOps;
+        if (i < availableOps.length) {
+          // Пока можем избежать повторов – выбираем операторы, которых еще не было.
+          candidateOps = availableOps.filter(op => !opArr.includes(op));
+        } else {
+          // Иначе допускаем операторы, в которых повторений меньше двух.
+          candidateOps = availableOps.filter(op =>
+            opArr.filter(x => x === op).length < 2
+          );
         }
+        // Если по каким-то причинам список пуст (хотя в норме он не должен быть пустым), возвращаем все с count < 2.
+        if (candidateOps.length === 0) {
+          candidateOps = availableOps.filter(op =>
+            opArr.filter(x => x === op).length < 2
+          );
+        }
+        // Выбираем операцию случайно с учетом весов в candidateOps.
+        let totalWeight = candidateOps.reduce((sum, op) => sum + opWeights[op], 0);
+        let rand = Math.random() * totalWeight;
+        let chosen;
+        for (let op of candidateOps) {
+          if (rand < opWeights[op]) {
+            chosen = op;
+            break;
+          }
+          rand -= opWeights[op];
+        }
+        if (!chosen) chosen = candidateOps[candidateOps.length - 1];
+        opArr.push(chosen);
+      }
+      return opArr;
     }
-
-    let numbers, equation, result;
-
-    do {
-        numbers = [];
-        equation = "";
-
-        for (let i = 0; i < numCount - 1; i++) {
-            numbers.push(Math.floor(Math.random() * 30) + 5);
-        }
-
-        equation = numbers[0].toString();
-        let currentValue = numbers[0];
-
-        for (let i = 1; i < numbers.length; i++) {
-            let operation = weightedOperations[Math.floor(Math.random() * weightedOperations.length)];
-            let operand = numbers[i];
-
-            if (operation === '/') {
-                let validDivisors = [];
-                for (let d = 1; d <= currentValue; d++) {
-                    if (currentValue % d === 0) validDivisors.push(d);
-                }
-
-                if (validDivisors.length > 0) {
-                    operand = validDivisors[Math.floor(Math.random() * validDivisors.length)];
-                } else {
-                    operand = 1;
-                }
-            }
-
-            let tempValue = eval(`${currentValue} ${operation} ${operand}`);
-
-            if (operation === '/' && !Number.isInteger(tempValue)) {
-                continue; 
-            }
-
-            equation += ` ${operation} ${operand}`;
-            currentValue = tempValue;
-        }
-
-        result = evaluateEquation(equation);
-
-    } while (result < 1 || result > 100 || !Number.isInteger(result));
-
-    equation += ` = ${result}`;
-    return equation;
-}
-
-function evaluateEquation(equation) {
-    try {
-        let result = eval(equation);
-        return Number.isInteger(result) ? result : null;
-    } catch (error) {
-        return null;
+  
+    // Функция, которая преобразует цепочку операций (например, [ '*', '/' ]) и массив чисел в строковое представление.
+    function segmentToString(segmentNumbers, chainOps) {
+      let str = segmentNumbers[0].toString();
+      for (let i = 0; i < chainOps.length; i++) {
+        str += " " + chainOps[i] + " " + segmentNumbers[i + 1].toString();
+      }
+      return str;
     }
-}
+  
+    // Цикл повторной генерации до тех пор, пока итоговый результат не попадет в диапазон [0, 100]
+    while (true) {
+      // Шаг 1. Генерируем последовательность операций.
+      // Всего операций должно быть (numCount - 1)
+      const opArr = generateOpSequence(numCount - 1, opWeights);
+  
+      // Шаг 2. Разбиваем последовательность на сегменты.
+      // Операторы '+' и '-' разделяют выражение на «умножительно-делительные» цепочки.
+      const segmentsOps = []; // цепочки операций для умножения/деления
+      const addOps = [];      // операторы сложения/вычитания между сегментами
+      let currentSegmentOps = [];
+      for (const op of opArr) {
+        if (op === '+' || op === '-') {
+          segmentsOps.push(currentSegmentOps);
+          addOps.push(op);
+          currentSegmentOps = []; // начинаем новую цепочку
+        } else {
+          // Операции '*' и '/'
+          currentSegmentOps.push(op);
+        }
+      }
+      // Добавляем последний сегмент
+      segmentsOps.push(currentSegmentOps);
+  
+      // Шаг 3. Для каждой цепочки генерируем числа так, чтобы промежуточные операции были корректны.
+      // Для простоты выбираем числа из диапазона 1..20.
+      const segments = [];
+      const maxRange = 20;
+      for (const chain of segmentsOps) {
+        const numbers = [];
+        // Начальное число в цепочке: от 1 до maxRange
+        let currentValue = Math.floor(Math.random() * maxRange) + 5;
+        numbers.push(currentValue);
+        // Пробегаем по каждой операции в цепочке.
+        for (const op of chain) {
+          if (op === '*') {
+            // При умножении выбираем множитель.
+            const factor = Math.floor(Math.random() * maxRange) + 1;
+            numbers.push(factor);
+            currentValue = currentValue * factor;
+          } else if (op === '/') {
+            // При делении выбираем делитель так, чтобы текущее значение делилось без остатка.
+            const divisors = [];
+            for (let d = 1; d <= maxRange; d++) {
+              if (currentValue % d === 0) {
+                divisors.push(d);
+              }
+            }
+            // На всякий случай, если делителей не найдено (теоретически 1 всегда делитель)
+            if (divisors.length === 0) {
+              divisors.push(1);
+            }
+            const divisor = divisors[Math.floor(Math.random() * divisors.length)];
+            numbers.push(divisor);
+            currentValue = currentValue / divisor;
+          }
+        }
+        segments.push({ numbers, value: currentValue });
+      }
+  
+      // Шаг 4. Собираем итоговое выражение.
+      // Первое значение – значение первого сегмента.
+      let expressionStr = segmentToString(segments[0].numbers, segmentsOps[0]);
+      let result = segments[0].value;
+  
+      // Применяем операции сложения/вычитания между цепочками.
+      for (let i = 0; i < addOps.length; i++) {
+        const op = addOps[i];
+        const segIndex = i + 1;
+        expressionStr += " " + op + " " + segmentToString(segments[segIndex].numbers, segmentsOps[segIndex]);
+        if (op === '+') {
+          result += segments[segIndex].value;
+        } else if (op === '-') {
+          result -= segments[segIndex].value;
+        }
+      }
+  
+      // Добавляем результат к строковому представлению
+      expressionStr += " = " + result.toString();
+  
+      // Шаг 5. Проверяем условие итогового результата.
+      if (result >= 0 && result <= 100) {
+        return expressionStr;
+      }
+    }
+  }
 
 const findVerticalExpression = (datasets, numbers) => {
     return numbers.map(num => {
@@ -184,7 +254,7 @@ function getMathEquations(numCount, rowCount, opWeights){
     let arr = []; 
     let verticalEquations = [];
     for(let i = 0; i < rowCount - 1; i++){
-        arr.push(generateMathEquation(numCount, opWeights)); 
+        arr.push(generateMathEquation(numCount - 1, opWeights)); 
     }
 
     for(let i = 0; i < 10; i++){
@@ -220,10 +290,11 @@ function getMathEquations(numCount, rowCount, opWeights){
         else{
         arr.length = 0;
         for(let i = 0; i < rowCount - 1; i++){
-            arr.push(generateMathEquation(numCount, opWeights)); 
+            arr.push(generateMathEquation(numCount - 1, opWeights)); 
         }
         }
     }
+
     return {horizontal: arr, vertical: verticalEquations}; 
 }
 
@@ -266,11 +337,9 @@ function createMatsMatrix(data) {
 
 function getRemovalConfig(complexity, matrix) {
     const totalNumbers = matrix.flat().filter(cell => !isNaN(cell) && cell !== ' ').length;
-    console.log(totalNumbers);
     let removalConfig = {};
 
     const maxRemoveCount = Math.min(totalNumbers - 3, totalNumbers);
-    console.log(maxRemoveCount)
 
     switch (complexity) {
         case 'easy':
@@ -337,13 +406,13 @@ function getCompexity(complexity){
 
     switch (complexity){
         case 'easy':
-            opWeights = { "+": 0.25, "-": 0.25, "*": 0.25, "/": 0.25 };
+            opWeights = { "+": 5, "-": 5, "*": 5, "/": 5 };
             break;
         case 'medium':
-            opWeights = { "+": 0.2, "-": 0.2, "*": 0.4, "/": 0.2 };
+            opWeights = { "+": 4, "-": 4, "*": 6, "/": 6 };
             break;
         case 'hard':
-            opWeights = { "+": 0.1, "-": 0.1, "*": 0.5, "/": 0.3 };
+            opWeights = { "+": 2, "-": 2, "*": 8, "/": 8 };
             break;
     }
 
@@ -394,6 +463,7 @@ function buildTable() {
         table.appendChild(tr);
     });
 
+
     document.getElementById("resetButton").addEventListener("click", resetPuzzle);
     document.getElementById("checkButton").addEventListener("click", checkPuzzle);
 }
@@ -428,7 +498,6 @@ function resetPuzzle() {
 
 function checkPuzzle() {
     const table = document.getElementById("puzzle");
-    const rows = table.getElementsByTagName('tr');
 
     for (let i = 0; i < table.rows.length; i++) {
         for (let j = 0; j < table.rows[i].cells.length; j++) {
