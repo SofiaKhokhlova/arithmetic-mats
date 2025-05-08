@@ -845,7 +845,7 @@ function getCompexity(complexity) {
     switch (complexity) {
         case 'EASY_LEVEL':
             opWeights = { "+": 5, "-": 5, "*": 5, "/": 5 };
-            [min, max] = [1, 20];
+            [min, max] = [1, 30];
             break;
         case 'MEDIUM_LEVEL':
             opWeights = { "+": 4, "-": 4, "*": 6, "/": 6 };
@@ -879,7 +879,7 @@ function buildTable() {
     let numCount = parseInt(resSize[0], 10);
     let  rowCount = parseInt(resSize[1], 10);
 
-    const data = getMathEquations(numCount, rowCount, opWeights);
+    const data = getMathEquations(numCount, rowCount, opWeights, min, max);
     const matrix = createMatsMatrix(data);
     initialMatrix = JSON.parse(JSON.stringify(matrix));
 
@@ -923,27 +923,22 @@ function buildTable() {
 
 function handleKeyDown(event) {
     const maxLength = 1; 
-    // Если длина текста в ячейке уже максимальная и пользователь пытается ввести что-то, кроме Backspace
     if (event.target.textContent.length > maxLength && event.key !== 'Backspace') {
-        event.preventDefault(); // Блокируем ввод
+        event.preventDefault(); 
         showHint(event.target, `Використовуй однозначні або двозначні числа`);
     }
 }
 
-// Обработчик для события input (для немедленного удаления букв)
 function handleInput(event) {
     let input = event.target.textContent.trim();
 
-    // Если ввод содержит нецифровые символы, заменяем их на пустую строку
     if (!/^\d*$/.test(input)) {
-        event.target.textContent = input.replace(/\D/g, ''); // Оставляем только цифры
+        event.target.textContent = input.replace(/\D/g, '');
         showHint(event.target, "Вводь лише числа");
     }
 
-    // Очищаем стиль фона
     event.target.style.background = '';
 
-    // Сбрасываем кнопку проверки (если она есть)
     resetCheckButton();
 }
 
