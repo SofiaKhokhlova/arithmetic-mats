@@ -710,10 +710,13 @@ function createMatsMatrix(data) {
         const row = i * 2;
         equation.split(' ').forEach((char, j) => {
             if (char === '/') {
-                char = '÷';
+                char = ':';
             }
             if (char === '*') {
                 char = '×';
+            }
+            if (char === '-') {
+                char = '–';
             }
             matrix[row][j] = char;
         });
@@ -723,10 +726,13 @@ function createMatsMatrix(data) {
         const col = i * 2;
         equation.split(' ').forEach((char, j) => {
             if (char === '/') {
-                char = '÷';
+                char = ':';
             }
             if (char === '*') {
                 char = '×';
+            }
+            if (char === '-') {
+                char = '–';
             }
             matrix[j][col] = char;
         });
@@ -1050,7 +1056,7 @@ function checkMatrix(matrix) {
     }
 
     const normalizedMatrix = matrix.map(row =>
-        row.map(cell => cell.replace('×', '*').replace('÷', '/'))
+        row.map(cell => cell.replace('×', '*').replace(':', '/').replace('–', '-'))
     )
 
     const evenRows = normalizedMatrix.filter((_, rowIndex) => rowIndex % 2 === 0)
