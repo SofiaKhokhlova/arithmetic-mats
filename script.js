@@ -48,13 +48,11 @@ labelsComplexityRadioButtons.forEach(label => {
 
 function generateUniqueMathEquations(numEquations, numCount, opWeights, maxNumber, minNumber) {
     const equations = [];
-    const usedResults = new Set(); // Track used results across equations
+    const usedResults = new Set();
 
-    // Track numbers used at each position across all equations
     const positionUsedNumbers = Array(numCount).fill().map(() => new Set());
 
     function generateMathEquation(numCount, opWeights) {
-        // Track numbers used in this specific equation
         const equationNumbers = new Set();
 
         function isPrime(n) {
@@ -83,12 +81,9 @@ function generateUniqueMathEquations(numEquations, numCount, opWeights, maxNumbe
             do {
                 num = Math.floor(Math.random() * (max - min + 1)) + min;
                 attempts++;
-                // Avoid infinite loops
                 if (attempts >= maxAttempts) {
-                    // If we can't find a unique number, we'll accept one that's at least not in this equation
                     if (!excludeSet.has(num)) break;
 
-                    // If still struggling, generate any number in range
                     if (attempts >= maxAttempts * 1.5) {
                         num = Math.floor(Math.random() * (max - min + 1)) + min;
                         break;
@@ -112,12 +107,10 @@ function generateUniqueMathEquations(numEquations, numCount, opWeights, maxNumbe
             const opArr = [];
 
             for (let i = 0; i < numOps; i++) {
-                // Prioritize operations that haven't been used yet
                 let candidateOps = availableOps.filter(op =>
                     opArr.filter(x => x === op).length < Math.ceil(numOps / availableOps.length)
                 );
 
-                // NEW: Avoid multiplication followed by division or division followed by multiplication
                 if (i > 0) {
                     if (opArr[i - 1] === '*') {
                         candidateOps = candidateOps.filter(op => op !== '/');
@@ -128,16 +121,14 @@ function generateUniqueMathEquations(numEquations, numCount, opWeights, maxNumbe
 
                 if (candidateOps.length === 0) {
                     candidateOps = availableOps;
-                    // Still avoid consecutive multiply/divide if possible
                     if (i > 0 && (opArr[i - 1] === '*' || opArr[i - 1] === '/')) {
                         candidateOps = candidateOps.filter(op => op !== '*' && op !== '/');
                         if (candidateOps.length === 0) {
-                            candidateOps = ['+', '-']; // Force addition or subtraction
+                            candidateOps = ['+', '-'];
                         }
                     }
                 }
 
-                // Use weighted random selection
                 let totalWeight = candidateOps.reduce((sum, op) => sum + opWeights[op], 0);
                 let rand = Math.random() * totalWeight;
                 let chosen;
@@ -157,10 +148,10 @@ function generateUniqueMathEquations(numEquations, numCount, opWeights, maxNumbe
             return opArr;
         }
 
-        // Build the equation directly with full result checking
         function buildEquation(numCount, opWeights) {
             const numbers = [];
             const operations = generateOpSequence(numCount - 1, opWeights);
+            console.log(operations);
             const tokens = [];
             let expression = '';
         
@@ -284,17 +275,14 @@ function generateUniqueMathEquations(numEquations, numCount, opWeights, maxNumbe
         };
     }
 
-    // Simpler fallback equation generator for difficult cases
     function buildSimpleEquation(numCount, opWeights) {
         const numbers = [];
         const operations = [];
         const equationNumbers = new Set();
 
-        // Start with a small number that hasn't been used in position 0
         let currentValue;
         let firstPosition = true;
 
-        // Try to find a number not used in position 0
         for (let i = 2; i <= 20; i++) {
             if (!positionUsedNumbers[0].has(i)) {
                 currentValue = i;
@@ -304,7 +292,6 @@ function generateUniqueMathEquations(numEquations, numCount, opWeights, maxNumbe
             }
         }
 
-        // If all are used, just pick a random one
         if (firstPosition) {
             currentValue = Math.floor(Math.random() * 19) + 2; // 2-20
         }
@@ -312,16 +299,13 @@ function generateUniqueMathEquations(numEquations, numCount, opWeights, maxNumbe
         numbers.push(currentValue);
         equationNumbers.add(currentValue);
 
-        // Track last operation and number for cancellation avoidance
         let lastOpNum = null;
         let lastOp = null;
 
         for (let i = 1; i < numCount; i++) {
-            // Choose operation
             const availableOps = Object.keys(opWeights);
             let candidateOps = [...availableOps];
 
-            // NEW: Avoid multiplication followed by division or division followed by multiplication
             if (lastOp === '*') {
                 candidateOps = candidateOps.filter(op => op !== '/');
             } else if (lastOp === '/') {
@@ -329,12 +313,11 @@ function generateUniqueMathEquations(numEquations, numCount, opWeights, maxNumbe
             }
 
             if (candidateOps.length === 0) {
-                candidateOps = ['+', '-']; // Force addition or subtraction
+                candidateOps = ['+', '-']; 
             }
 
             let nextOp;
 
-            // Weighted random selection
             const opWeightSum = candidateOps.reduce((sum, op) => sum + opWeights[op], 0);
             let rand = Math.random() * opWeightSum;
 
@@ -354,7 +337,6 @@ function generateUniqueMathEquations(numEquations, numCount, opWeights, maxNumbe
             const maxAttempts = 20;
             let valid = false;
 
-            // NEW: Set of numbers to avoid for cancellation patterns
             let shouldAvoid = new Set();
             if (lastOp === '*' && nextOp === '/') {
                 shouldAvoid.add(lastOpNum);
@@ -365,7 +347,6 @@ function generateUniqueMathEquations(numEquations, numCount, opWeights, maxNumbe
             while (!valid && attempts < maxAttempts) {
                 attempts++;
 
-                // Try to find a number not used in this position
                 const availableNumbers = [];
                 for (let j = 1; j <= 20; j++) {
                     if (!equationNumbers.has(j) && !positionUsedNumbers[i].has(j) && !shouldAvoid.has(j)) {
@@ -373,7 +354,6 @@ function generateUniqueMathEquations(numEquations, numCount, opWeights, maxNumbe
                     }
                 }
 
-                // If no numbers available with both constraints, just avoid duplicates in this equation
                 if (availableNumbers.length === 0) {
                     for (let j = 1; j <= 20; j++) {
                         if (!equationNumbers.has(j) && !shouldAvoid.has(j)) {
@@ -383,7 +363,6 @@ function generateUniqueMathEquations(numEquations, numCount, opWeights, maxNumbe
                 }
 
                 if (availableNumbers.length === 0) {
-                    // Still no valid numbers, remove the cancellation constraint
                     for (let j = 1; j <= 20; j++) {
                         if (!equationNumbers.has(j)) {
                             availableNumbers.push(j);
@@ -392,7 +371,6 @@ function generateUniqueMathEquations(numEquations, numCount, opWeights, maxNumbe
                 }
 
                 if (availableNumbers.length === 0) {
-                    // Completely out of numbers, pick any valid one
                     nextNum = Math.floor(Math.random() * 20) + 1;
                 } else {
                     nextNum = availableNumbers[Math.floor(Math.random() * availableNumbers.length)];
@@ -405,12 +383,10 @@ function generateUniqueMathEquations(numEquations, numCount, opWeights, maxNumbe
                     valid = nextResult <= 100 && !usedResults.has(nextResult) && nextNum !== 0;
                 }
                 else if (nextOp === '-') {
-                    // Ensure result is positive
                     if (nextNum >= currentValue) {
                         if (attempts < maxAttempts / 2) {
                             continue;
                         } else {
-                            // If struggling, try a smaller number
                             nextNum = Math.max(1, Math.floor(currentValue / 2));
                         }
                     }
@@ -429,7 +405,6 @@ function generateUniqueMathEquations(numEquations, numCount, opWeights, maxNumbe
                         if (attempts < maxAttempts / 2) {
                             continue;
                         } else {
-                            // If struggling, use a smaller factor
                             nextNum = Math.min(nextNum, maxFactor);
                         }
                     }
@@ -437,12 +412,10 @@ function generateUniqueMathEquations(numEquations, numCount, opWeights, maxNumbe
                     valid = nextResult <= 100 && !usedResults.has(nextResult) && nextNum !== 1;
                 }
                 else if (nextOp === '/') {
-                    // Check if this number can be a divisor
                     if (currentValue % nextNum !== 0 || nextNum === 1 || nextNum === currentValue) {
                         if (attempts < maxAttempts / 2) {
                             continue;
                         } else {
-                            // Try to find a valid divisor
                             const divisors = getDivisors(currentValue).filter(d =>
                                 d !== 1 && d !== currentValue && !equationNumbers.has(d) && !shouldAvoid.has(d) && d <= 20
                             );
@@ -450,7 +423,6 @@ function generateUniqueMathEquations(numEquations, numCount, opWeights, maxNumbe
                             if (divisors.length > 0) {
                                 nextNum = divisors[Math.floor(Math.random() * divisors.length)];
                             } else {
-                                // Cannot do division, change operation
                                 nextOp = '+';
                                 operations[operations.length - 1] = '+';
                                 continue;
@@ -462,19 +434,16 @@ function generateUniqueMathEquations(numEquations, numCount, opWeights, maxNumbe
                     valid = Number.isInteger(nextResult) && !usedResults.has(nextResult) && nextNum !== 1;
                 }
 
-                // NEW: Check that result is different from current value
                 if (valid && nextResult === currentValue) {
                     valid = false;
                 }
 
                 if (!valid && attempts >= maxAttempts) {
-                    // Switch to addition as a last resort
                     nextOp = '+';
                     operations[operations.length - 1] = '+';
 
-                    // Find a small number that keeps result under 100
                     nextNum = Math.min(10, 100 - currentValue);
-                    if (nextNum <= 0) nextNum = 3; // Force a meaningful change
+                    if (nextNum <= 0) nextNum = 3; 
 
                     currentValue += nextNum;
                     valid = true;
@@ -483,16 +452,14 @@ function generateUniqueMathEquations(numEquations, numCount, opWeights, maxNumbe
                 if (valid) {
                     numbers.push(nextNum);
                     equationNumbers.add(nextNum);
-                    lastOpNum = nextNum;  // Track for cancellation avoidance
+                    lastOpNum = nextNum; 
                     lastOp = nextOp;
                     currentValue = nextResult;
-                    // Add to position tracking
                     positionUsedNumbers[i].add(nextNum);
                 }
             }
         }
 
-        // Build the equation string
         let equation = numbers[0].toString();
         for (let i = 0; i < operations.length; i++) {
             equation += " " + operations[i] + " " + numbers[i + 1];
@@ -504,18 +471,16 @@ function generateUniqueMathEquations(numEquations, numCount, opWeights, maxNumbe
         };
     }
 
-    // Generate the requested number of unique equations
     for (let i = 0; i < numEquations; i++) {
         let equationData;
         let attempts = 0;
-        const maxAttempts = 50; // Increased attempts for more uniqueness
+        const maxAttempts = 50; 
 
         do {
             equationData = generateMathEquation(numCount, opWeights);
             attempts++;
             if (attempts >= maxAttempts) {
                 console.warn("Warning: Could not generate enough unique equations with unique results.");
-                // We'll accept this equation and continue, but warn the user
                 break;
             }
         } while (equations.includes(equationData.equation) || usedResults.has(equationData.result));
@@ -555,17 +520,17 @@ function getVerticalExpression(numbersArray, datasets) {
 
 function calculateCombinationsWithOrder(numbers, operations) {
     let results = [];
-    let memo = new Map(); // Кешируем уже вычисленные выражения
+    let memo = new Map(); 
 
     function evaluate(expression) {
         if (memo.has(expression)) {
-            return memo.get(expression); // Загружаем из кеша, если уже считали
+            return memo.get(expression); 
         }
 
         try {
             const result = eval(expression);
             if (Number.isInteger(result) && result > 0 && result < 100) {
-                memo.set(expression, result); // Запоминаем результат
+                memo.set(expression, result);
                 return result;
             }
         } catch (e) {}
@@ -583,14 +548,13 @@ function calculateCombinationsWithOrder(numbers, operations) {
             let newExpression = `${expression} ${op} ${numbers[index]}`;
             let newValue = evaluate(newExpression);
 
-            // Раннее отсечение: пропускаем неподходящие результаты
             if (newValue !== null && newValue > 0 && newValue < 100) {
                 generateExpressions(index + 1, newExpression, newValue);
             }
         }
     }
 
-    generateExpressions(1, `${numbers[0]}`, numbers[0]); // Передаём текущее значение для отсечения
+    generateExpressions(1, `${numbers[0]}`, numbers[0]);
     console.log(results);
     return results;
 }
@@ -601,6 +565,22 @@ function findPossibleEquations(arrays, operations) {
 
     function evaluate(expression) {
         try {
+            if (expression.includes("/")) {
+            const numbers = expression.split(/[\+\-\*\/]/).map(num => parseInt(num.trim()));
+            const operators = expression.match(/[\+\-\*\/]/g);
+
+            for (let i = 0; i < operators.length; i++) {
+                if (operators[i] === "/") {
+                    const dividend = numbers[i];
+                    const divisor = numbers[i + 1];
+
+                    if (dividend % divisor !== 0 || dividend / divisor <= 0) {
+                        return null;
+                    }
+                }
+            }
+        }
+
             const result = eval(expression);
             if (targetResults.includes(result) && result < 100) {
                 results.push(expression + " = " + result);
@@ -670,7 +650,7 @@ function getMathEquations(numCount, rowCount, opWeights, min, max) {
         arr.push(eq);
     });
 
-    for (let i = 0; i < 10; i++) {
+    for (let i = 0; i < 20; i++) {
         const separatedNumbers = getNumbersFromExpressions(arr);
 
         let calculatedResults = [];
@@ -721,6 +701,8 @@ function createMatsMatrix(data) {
 
     const rows = horizontal.length * 2 - 1;
     const cols = vertical.length * 2 - 1;
+
+    console.log(data);
 
     const matrix = Array.from({ length: rows }, () => Array(cols).fill(' '));
 
@@ -844,16 +826,16 @@ function getCompexity(complexity) {
 
     switch (complexity) {
         case 'EASY_LEVEL':
-            opWeights = { "+": 5, "-": 5, "*": 5, "/": 5 };
+            opWeights = { "+": 5, "-": 5, "*": 3, "/": 1 };
             [min, max] = [1, 30];
             break;
         case 'MEDIUM_LEVEL':
-            opWeights = { "+": 4, "-": 4, "*": 6, "/": 6 };
+            opWeights = { "+": 5, "-": 5, "*": 5, "/": 3 };
             [min, max] = [10, 50];
             break;
         case 'HARD_LEVEL':
-            opWeights = { "+": 2, "-": 2, "*": 8, "/": 8 };
-            [min, max] = [2, 99];
+            opWeights = { "+": 3, "-": 4, "*": 5, "/": 4 };
+            [min, max] = [20, 70];
             break;
     }
 
