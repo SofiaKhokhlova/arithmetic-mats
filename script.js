@@ -1167,14 +1167,14 @@ function resetCheckButton() {
 
 function selectAndRenderImages() {
     const imagePool = [
-        "/img/left-top-img1.png",
-        "/img/left-bottom-img1.png",
-        "/img/right-top-img1.png",
-        "/img/right-bottom-img1.png",
-        "/img/left-top-img2.png",
-        "/img/left-bottom-img2.png",
-        "/img/right-top-img2.png",
-        "/img/right-bottom-img2.png"
+        "./img/left-top-img1.png",
+        "./img/left-bottom-img1.png",
+        "./img/right-top-img1.png",
+        "./img/right-bottom-img1.png",
+        "./img/left-top-img2.png",
+        "./img/left-bottom-img2.png",
+        "./img/right-top-img2.png",
+        "./img/right-bottom-img2.png"
     ];
 
     const imageMap = {
