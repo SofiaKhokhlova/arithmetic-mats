@@ -151,7 +151,6 @@ function generateUniqueMathEquations(numEquations, numCount, opWeights, maxNumbe
         function buildEquation(numCount, opWeights) {
             const numbers = [];
             const operations = generateOpSequence(numCount - 1, opWeights);
-            console.log(operations);
             const tokens = [];
             let expression = '';
         
@@ -518,7 +517,7 @@ function getVerticalExpression(numbersArray, datasets) {
     });
 }
 
-function calculateCombinationsWithOrder(numbers, operations) {
+function calculateCombinationsWithOrder(numbers, operations, opWeights) {
     let results = [];
     let memo = new Map(); 
 
@@ -545,6 +544,8 @@ function calculateCombinationsWithOrder(numbers, operations) {
         }
 
         for (let op of operations) {
+            if (opWeights[op] === 0) continue;
+            
             let newExpression = `${expression} ${op} ${numbers[index]}`;
             let newValue = evaluate(newExpression);
 
@@ -555,7 +556,6 @@ function calculateCombinationsWithOrder(numbers, operations) {
     }
 
     generateExpressions(1, `${numbers[0]}`, numbers[0]);
-    console.log(results);
     return results;
 }
 
@@ -642,23 +642,25 @@ function getNumbersFromExpressions(expressions) {
 function getMathEquations(numCount, rowCount, opWeights, min, max) {
     numCount = numCount == 5 ? 3 : 4;
     rowCount = rowCount == 5 ? 3 : 4;
-    let arr = [];
+    let horizontalEquations = [];
     let verticalEquations = [];
     let eqs = generateUniqueMathEquations(rowCount - 1, numCount - 1, opWeights, max, min);
-
+    
     eqs.forEach(eq => {
-        arr.push(eq);
+        horizontalEquations.push(eq);
     });
 
-    for (let i = 0; i < 20; i++) {
-        const separatedNumbers = getNumbersFromExpressions(arr);
-
+    let maxAttempts = 20;
+    let consecutiveFailures = 0;
+    
+    while (consecutiveFailures < maxAttempts) {
+        const separatedNumbers = getNumbersFromExpressions(horizontalEquations);
         let calculatedResults = [];
         const operations = ['+', '-', '*', '/'];
         let valuesArray = [];
 
         separatedNumbers.forEach(array => {
-            calculatedResults.push(calculateCombinationsWithOrder(array, operations));
+            calculatedResults.push(calculateCombinationsWithOrder(array, operations, opWeights));
         });
 
         calculatedResults.forEach(entry => {
@@ -669,31 +671,55 @@ function getMathEquations(numCount, rowCount, opWeights, min, max) {
 
         if (resultExpressions.length > 0) {
             const finalResult = getVerticalExpression(resultExpressions, calculatedResults);
-
-            let indFR;
-            let attempts = 0;
-
-            do {
-                indFR = Math.floor(Math.random() * finalResult.length);
-                attempts++;
-            } while (attempts < finalResult.length && verticalEquations.includes(resultExpressions[indFR]));
-
-            if (!verticalEquations.includes(resultExpressions[indFR])) {
-                arr.push(resultExpressions[indFR]);
-                verticalEquations = finalResult[indFR];
-                break;
+            
+            let found = false;
+            let localAttempts = Math.min(finalResult.length * 2, 50);
+            
+            for (let attempt = 0; attempt < localAttempts; attempt++) {
+                const indFR = Math.floor(Math.random() * finalResult.length);
+                const potentialEquation = resultExpressions[indFR];
+                
+                // Перевіряємо, чи не містить рівність чисел з вертикальних рівностей
+                const verticalNumbers = new Set();
+                verticalEquations.forEach(eq => {
+                    const numbers = eq.match(/\d+/g).map(Number);
+                    numbers.forEach(num => verticalNumbers.add(num));
+                });
+                
+                const horizontalNumbers = potentialEquation.match(/\d+/g).map(Number);
+                const hasCommonNumbers = horizontalNumbers.some(num => verticalNumbers.has(num));
+                
+                if (!verticalEquations.includes(potentialEquation) && !hasCommonNumbers) {
+                    verticalEquations = finalResult[indFR];
+                    horizontalEquations.push(potentialEquation);
+                    found = true;
+                    break;
+                }
             }
-        } else {
-            arr.length = 0;
-            eqs.length = 0;
-            eqs = generateUniqueMathEquations(rowCount - 1, numCount - 1, opWeights, max, min);
-            eqs.forEach(eq => {
-                arr.push(eq);
-            });
+            
+            if (found) {
+                return {
+                    horizontal: horizontalEquations,
+                    vertical: verticalEquations
+                };
+            }
         }
+
+        consecutiveFailures++;
+        
+        if (consecutiveFailures === Math.floor(maxAttempts * 0.8)) {
+            maxAttempts *= 1.5;
+        }
+        
+        horizontalEquations.length = 0;
+        eqs.length = 0;
+        eqs = generateUniqueMathEquations(rowCount - 1, numCount - 1, opWeights, max, min);
+        eqs.forEach(eq => {
+            horizontalEquations.push(eq);
+        });
     }
 
-    return { horizontal: arr, vertical: verticalEquations };
+    return null;
 }
 
 function createMatsMatrix(data) {
@@ -701,8 +727,6 @@ function createMatsMatrix(data) {
 
     const rows = horizontal.length * 2 - 1;
     const cols = vertical.length * 2 - 1;
-
-    console.log(data);
 
     const matrix = Array.from({ length: rows }, () => Array(cols).fill(' '));
 
@@ -855,10 +879,14 @@ function buildTable() {
     if (board.children.length !== 0)
         board.removeChild(board.children[0]);
 
-    const table = document.createElement("table")
-    table.setAttribute("cellspacing", "0")
-    table.setAttribute("id", "game-board")
-    board.appendChild(table)
+    const maxAttempts = 10;
+    let attempts = 0;
+    let equations = null;
+
+    const table = document.createElement("table");
+    table.setAttribute("cellspacing", "0");
+    table.setAttribute("id", "game-board");
+    board.appendChild(table);
 
     const {opWeights, min, max} = getCompexity(COMPLEXITY_TYPE);
 
@@ -867,8 +895,17 @@ function buildTable() {
     let numCount = parseInt(resSize[0], 10);
     let  rowCount = parseInt(resSize[1], 10);
 
-    const data = getMathEquations(numCount, rowCount, opWeights, min, max);
-    const matrix = createMatsMatrix(data);
+
+    while (!equations || attempts) {
+        attempts++;
+        equations = getMathEquations(numCount, rowCount, opWeights, min, max);
+
+        if (equations){
+            break;
+        }
+    }
+
+    const matrix = createMatsMatrix(equations);
     initialMatrix = JSON.parse(JSON.stringify(matrix));
 
     const { matrix: finalMatrix } = emptyRandomCells(matrix, COMPLEXITY_TYPE);
@@ -907,6 +944,7 @@ function buildTable() {
     });
 
     resetCheckButton();
+    selectAndRenderImages();
 }
 
 function handleKeyDown(event) {
@@ -1107,6 +1145,8 @@ function createEmptyTable() {
     const checkButton = document.getElementById("check");
     checkButton.removeAttribute("onclick");
     checkButton.innerHTML = "Перевірити";
+
+    selectAndRenderImages();
 }
 
 function emptySellGenerator() {
@@ -1123,4 +1163,52 @@ function resetCheckButton() {
     checkButton.classList.add("cta-primary");
     checkButton.setAttribute("onclick", "checkPuzzle()");
     checkButton.innerHTML = "Перевірити";
+}
+
+function selectAndRenderImages() {
+    const imagePool = [
+        "/img/left-top-img1.png",
+        "/img/left-bottom-img1.png",
+        "/img/right-top-img1.png",
+        "/img/right-bottom-img1.png",
+        "/img/left-top-img2.png",
+        "/img/left-bottom-img2.png",
+        "/img/right-top-img2.png",
+        "/img/right-bottom-img2.png"
+    ];
+
+    const imageMap = {
+        "left-top": [],
+        "left-bottom": [],
+        "right-top": [],
+        "right-bottom": []
+    };
+
+    imagePool.forEach(path => {
+        for (const key in imageMap) {
+            if (path.includes(key)) {
+                imageMap[key].push(path);
+            }
+        }
+    });
+
+    const getRandom = arr => arr[Math.floor(Math.random() * arr.length)];
+
+    const leftPosition = Math.random() < 0.5 ? "top" : "bottom";
+    const rightPosition = Math.random() < 0.5 ? "top" : "bottom";
+
+    const leftImgPath = getRandom(imageMap[`left-${leftPosition}`]);
+    const rightImgPath = getRandom(imageMap[`right-${rightPosition}`]);
+
+    const leftImg = document.querySelector(".left-img img");
+    const rightImg = document.querySelector(".right-img img");
+
+    leftImg.parentElement.classList.remove("top", "bottom");
+    rightImg.parentElement.classList.remove("top", "bottom");
+
+    leftImg.parentElement.classList.add(leftPosition);
+    rightImg.parentElement.classList.add(rightPosition);
+
+    leftImg.src = leftImgPath;
+    rightImg.src = rightImgPath;
 }

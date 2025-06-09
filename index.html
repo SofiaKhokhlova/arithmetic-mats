@@ -17,7 +17,7 @@
         <div class="int-header__content">
             <h3 class="int-header__title">
                 <span>
-                    Обери розмір арифметичного килимка (перше число - кількість стовпчиків, друге число - кількість рядків) та складність (легкий, середній, важкий). Створи килимок натисканням кнопки "Створити". 
+                    Обери розмір арифметичного килимка (перше число - кількість рядків, друге число - кількість стовпчиків) та складність (легкий, середній, важкий). Створи килимок натисканням кнопки "Створити". 
                     Впиши в порожні комірки числа так, щоб усі рівності були правильними.
                 </span>
             </h3>
@@ -54,16 +54,22 @@
         <label id="order-label">Розмір:
             <select id="size">
                 <option value="5*5">5×5</option>
-                <option value="5*7">5×7</option>
-                <option value="7*5">7×5</option>
+                <option value="7*5">5×7</option>
+                <option value="5*7">7×5</option>
                 <option value="7*7">7×7</option>
             </select>
         </label>
         <button type="button" class="cta cta-primary" id="generate" onclick="buildTable()">Створити</button>
     </nav>
-    <div id="latin-square">
+    <div id="arithmetic-mats">
+        <div class="left-img single">
+            <img class="left-img" />
+        </div>
         <div id="board">
             <div id="input-hint" style="display: none;"></div>
+        </div>
+        <div class="right-img single">
+            <img class="right-img" />
         </div>
     </div>
 </main>
